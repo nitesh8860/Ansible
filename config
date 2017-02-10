@@ -1,0 +1,9 @@
+
+yum list installed | grep requiredPackage     
+man ansible-doc
+
+ansible hostname -i hosts -m ping     ----to give hostname explicitly through a different hosts file residing in same(in this case)
+or different directory
+
+ansible all --list-hostsin 
+cat /etc/ansible/hosts
