@@ -1,4 +1,14 @@
 
+to add a user to sudoers and no password required
+sudo visudo
+user ALL=(ALL)    NOPASSWD: ALL
+
+ansible.cfg  ----- #ask_sudo_pass
+
+ssh-keygen
+ssh-copy-id user@IP
+
+
 yum list installed | grep requiredPackage     
 man ansible-doc
 
