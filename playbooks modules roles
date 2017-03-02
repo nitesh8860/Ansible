@@ -1,0 +1,249 @@
+ansible local -m setup | more    --------facts of the system
+ansible local -m setup --tree /tmp/facts           ---------to store facts in facts folder
+ansible apacheweb -m setup -a 'filter=ansible*'
+
+ansible apacheweb -s -m shell -a 'yum install lynx'
+ansible apacheweb -s -m yum -a 'pkg=lynx state=installed update_cache=true'
+
+vars must always be above tasks
+
+--------to include a file in playbook containing vars
+vars_files:
+- vars.yml
+
+putting three dashes at the top of a file indicates that it is an ansible file , mandatory
+putting a dash indicates external reference
+
+vim /conf/copyrights
+---
+message: copyright by nitesh
+author: nitesh
+
+vim /conf/webdefaults
+----
+apache_version: 2.6
+apache_mod_req: mod_ssl
+lynx_pkg: lynx
+
+
+vim playbook.yml
+----
+- hosts: apacheweb
+  user: user
+  sudo: yes
+  connection: ssh
+  gather_facts: no
+  vars:
+    playbook_version: 1.0
+  vars_files: 
+    - conf/copyrights.yml
+    - conf/webdefaults.yml
+  vars_prompt:
+    - name: pkg_name
+      prompt: which pkg to install ?
+      default: telnet
+      private: no
+  tasks:
+    - name: timestamp
+      raw: /usr/bin/date > /home/test/playbook_start.log
+    - name: install apache server
+      action: yum name=httpd state=installed
+      notify: Restart httpd
+      async: 45            -----------wait for 45 sec for process to complete
+      poll: 10                -----------check every 10 sec for status
+
+    - name: install lynx
+      action: yum name={{ lynx_pkg }} state=installed              -------picking up the variable name from vars file
+   -  name: install pkg_name
+      action: yum name={{ pkg_name }} state=installed              -------picking up the variable name from prompt
+      tags:                                                   ------to run only the tagged task:  ansible-playbook playbook.yml --tags "packages"
+         - packages                                             we can skip also by using --skip-tags ,   "always" -- means all
+      ignore_errors: yes                             -----if we still want to move on if this task fails   
+    - name: verify web results
+      command: systemctl status httpd
+      register: result
+    - dubug: var=result
+    - name: log all results
+      raw yum list installed > /home/test/insstalled.log
+    - name: timestamp
+      raw: /usr/bin/date > /home/test/playbook_end.log
+  handlers:
+    - name: restart httpd service
+      action: service name: httpd state: restarted
+
+
+
+vim outline.txt
+---#outlining a playbook
+- webservers
+- test user
+- sudo 
+
+-timestamp
+
+- install the apache webserver\
+- start the web server
+
+-verify that the service is runnning
+- install client software
+  - telnet
+  - lynx
+
+- log all the playbooks on the system 
+
+- timestamp end
+
+
+if we do not want to make any changes and just want to check what changes are to be done:
+ansible-playbook playbook.yml --check
+
+{{ lookup(env, HOME) }} will give HOME variables value
+
+Symbol,Atomic Number,Atomic Mass
+H,1,1.008
+He,2,4.0026
+
+- debug: msg="The atomic mass of Lithium is {{ lookup('csvfile', 'He file=elements.csv delimiter=, col=2') }}
+
+runonce: true        ------runs only once and on one host only
+
+connection: local      ------to run playbook as local only
+
+to loop on something------
+{{ item }}
+with_items:
+    - user1       
+    - user2
+    - user3
+
+
+-------to create a secure vault
+ansible-vault create secure.yml            ---available options -- edit , rekey, decrypt, encrypt
+
+  tasks:
+         include: /plays/packages.yml           ----------- here packages.yml contains information about name and tasks to be done
+
+ansible-playbook playbook.yml --start-at-task='install lynx' 
+ansible-playbook playbook.yml --step
+
+
+ansible-playbook playbook.yml --extra-vars "hosts=apacheweb user=test pkg=telnet"    -------providing variables at runtime
+
+- name: pinging a server
+  local_action: command ping -c 4 serveraName               --------performing a local action(shortcut to delegateTo)
+
+file module-----
+ansible all -m file -a 'path=/etc/file.txt'   ---- description about the file
+
+ansible all -s -m file -a 'path=/etc/ state=directory mode=0700 owner=root' 
+
+pause module----
+- name: pausing untill manual intervention is done
+  pause:
+     prompt: "Make sure the installation is complete...."                  or        seconds: 3
+- name: wait for port 8080 to listen
+  wait_for:
+      port: 8080
+      state: started
+
+- name: upgrading
+  action: yum name=* state=latest
+- name: apt-get update
+  apt: update_cache=yes
+- name: apt upgrade
+  apt: upgrade=dist
+
+service module-----
+- name: start service
+  service: name=httpd state=started enabled=yes
+
+copy module-------
+- name: copy a file
+  copy: src=file_address/file.txt  dest=file_address/file.txt mode=0644 owner=root backup=yes
+              ----------------backup flag -- creates a backup of the original file if it already exist. with the timestamp
+
+use fetch for remote copy(copying from remote server described as in the hosts variables)
+
+command module-------
+- name: run a command
+  command: your command you need to run
+      args:
+         chdir: /home/test/whatever be the directory u want your command to be run
+
+Cron module:---------
+- name: add  a cron job
+  cron: name="list files" minute="0" hour="1" job="ls -al > /home/test/cronresult.log"
+--------it will be running everday at 1 am.
+
+
+we can check after runnning it
+crontab -l
+
+debug module-------
+- debug: msg = "this msg will be shown at runtime"
+
+- name: how long the system been up?
+  shell: /usr/bin/uptime
+  register: result                      ------------here result is a variable in which the answer of above shell command will be stored
+- debug: var=result
+
+User module----------
+- name: add user tstapache to a specific group
+  user: name=tstapache comment="Test Apache" group=wheel shell=/bin/bash
+to remove----    state=absent remove=yes
+
+AT module------
+- name: a command to run in future
+  at: command="ls -al /var/log > /home/test/at.log"   count="1" unit="minutes"
+
+DNF module--------
+package manager
+- name: installing a package
+  dnf: name=httpd state=latest
+to update
+  dnf: name=* state=latest
+group installation
+  dnf: name="@Development tools" state=present
+
+apache module--------
+- name: disable alias module
+  apache2_module: state=absent name=alias
+
+setfact module--------
+- name: local variable display
+  set_fact:
+       singlefact: SOMETHING
+- debug: msg={{ playbook_version }}
+- debug: msg={{ singlefact }}             
+
+stat module---------
+- name: to check if dir/file exist ?
+  stat: path=/home/test/file
+     register: p
+- debug: msg="file exists"
+     when: p.stat.isdir is defined and p.stat.isdir
+
+script module--------
+
+- script: /some/local/script.sh --some-arguments 1234
+
+
+- script: /some/local/create_file.sh --some-arguments 1234
+  args:
+    creates: /the/created/file.txt
+
+
+SELinux
+selinux: state=disabled policy=targeted
+seboolean: name=httpd_anon_write state=yes persistent=yes (will be enabled even after next system restart)
+ 
+
+
+
+
+
+
+
+
+
+
