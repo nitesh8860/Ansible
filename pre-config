@@ -1,0 +1,11 @@
+do this in all the vm's
+
+adduser test
+passwd test
+cd /home/test/
+mkdir playbooks
+chown test:test playbooks
+
+su - test
+ssh-keygen
+ssh-copy-id IPADDRESS
