@@ -1,0 +1,55 @@
+apt-get install ansible
+apt-get remove ansible
+apt-get install git
+git clone https://github.com/ansible/ansible.git
+apt-get install python-setuptools
+make
+make install
+
+for centos-------
+mkdir /etc/ansible/
+copy from git/ansible/examples to /etc/ansible
+cp hosts hosts.original
+vi hosts
+----------------
+[control]
+$hostname
+----------------
+adduser test
+passwd test
+su - test
+ssh-keygen
+ssh-copy-id test@localhost
+add test to the sudoers file
+
+cd /etc/ansible
+cp ansible.cfg ansible.cfg.original
+vi ansible.cfg
+inventory=/etc/ansible/hosts
+sudo_user = root
+roles_path 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
