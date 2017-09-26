@@ -1,0 +1,102 @@
+********************************************************************************************************************************8
+examples
+
+
+ ---
+- hosts: local
+  tasks:
+     - shell: cat /etc/motd
+       register: motd_contents
+     - debug: msg="stdout={{motd_contents}}"
+     - debug: msg="MOTD is EMPTY"
+       when: motd_contents.stdout == ""
+2.
+---
+- hosts: local
+  become: yes
+  tasks: 
+    - name: if the os is redhat install apache
+      yum: 
+       name: httpd
+       state: latest
+      when: ansible_os_family == "RedHat"
+
+
+1.
+---
+- hosts: local
+  tasks:
+    - name: Copy ansible inventory file to client
+      copy: src=/etc/ansible/hosts dest=/home/ansible/hosts
+2.
+---
+- hosts: local
+  become : yes
+  tasks:
+    - yum: "name=httpd state=latest"
+3.
+---
+- hosts: local
+  become: yes
+  tasks:
+  - yum: name={{item}} state=installed
+    with_items:
+      - php
+      - php-mysql
+      - httpd
+ 
+ ---
+- hosts: local
+  become: yes
+  vars:
+    database_name_here: wordpress
+    username_here: wordpress
+    password_here: mypassword1
+    dbhost_here: 172.31.108.177
+  tasks:
+   - name: copy template to host
+     template: src=wp-config.j2 dest=/home/ansible/wp-config.php
+     
+     Contents of template.j2 should look similar to the following.
+ 
+ 
+ 
+The server's hostname is description {{description}}
+ 
+ 
+The playbook.
+---
+- hosts: databases
+  become: yes
+  vars:
+    description: “{{ ansible_hostname }}”
+  tasks:
+  - name: write the config file
+    template: src=template.j2 dest=/home/ansible/index.html
+    notify:
+2.  The playbook might look like this.
+---
+- hosts: databases
+  vars:
+    create_file: true
+  tasks: 
+   - name: create file 
+     file:
+       state: touch
+       path: /home/ansible/variable_was_true
+     when: not create_file
+
+1. ansible local -m setup -a "filter=ansible_hostname"
+2. ansible local -m setup -a "filter=ansible_kernel"
+3. The playbook should look like this.
+---
+- hosts: local
+
+  tasks: 
+    - debug: msg="The server hostname is {{ansible_hostname}}"
+4.
+---
+- hosts: local
+
+  tasks:
+    - debug: msg="The server OS is {{ansible_distribution}} "
