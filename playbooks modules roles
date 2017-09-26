@@ -238,6 +238,9 @@ selinux: state=disabled policy=targeted
 seboolean: name=httpd_anon_write state=yes persistent=yes (will be enabled even after next system restart)
  
 
+- tags:
+    
+    
 
 
 
