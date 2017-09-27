@@ -100,3 +100,42 @@ The playbook.
 
   tasks:
     - debug: msg="The server OS is {{ansible_distribution}} "
+
+
+
+
+1. Create a folder called install-apache and its sub folders. 
+In the install-apache/tasks/main.yml it should similar to the following.
+- name: Install Apache server
+  yum: pkg=httpd state=latest
+  notify: Restart HTTPD
+In the install-apache/handler/main.yml it should look similar to the following.
+- name: Restart HTTPD
+  service: name=httpd state=restarted
+The playbook should look similar to the following.
+---
+- hosts: local
+  become: yes
+  
+  roles: 
+    - apache-webservers
+2. Create a folder called install-apache and its sub folders. 
+In the install-apache/tasks/main.yml it should similar to the following.
+- name: Install Apache server
+  yum: name={{item}} state=latest
+  with_items:
+   - httpd
+   - php
+   - php-gd
+   - php-pear
+   - elinks
+In the install-apache/handler/main.yml it should look similar to the following.
+- name: Restart HTTPD
+  service: name=httpd state=restarted
+The playbook should look similar to the following.
+---
+- hosts: local
+  become: yes
+  
+  roles: 
+    - apache-webservers
